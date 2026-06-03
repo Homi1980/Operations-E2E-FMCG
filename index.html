@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpsLens — Enterprise Value Operations Benchmark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────────────── */
+:root,[data-theme="light"]{
+  --color-bg:#f7f6f2;--color-surface:#f9f8f5;--color-surface-2:#ffffff;
+  --color-surface-offset:#f0ede8;--color-surface-dynamic:#e6e4df;
+  --color-divider:#dcd9d5;--color-border:#d4d1ca;
+  --color-text:#28251d;--color-text-muted:#6b6965;--color-text-faint:#b0afaa;
+  --color-text-inverse:#f9f8f4;
+  --color-primary:#01696f;--color-primary-hover:#0c4e54;--color-primary-active:#0f3638;
+  --color-primary-highlight:#e0eeed;--color-primary-soft:#c8dedd;
+  /* dimension accent palette */
+  --d1:#01696f;--d1-soft:#e0eeed;
+  --d2:#006494;--d2-soft:#ddeaf3;
+  --d3:#7a39bb;--d3-soft:#ede6f7;
+  --d4:#437a22;--d4-soft:#e0eedb;
+  --d5:#964219;--d5-soft:#f2e8e0;
+  --d6:#d19900;--d6-soft:#f5edcc;
+  --shadow-sm:0 1px 2px oklch(0.2 0.01 80/0.06);
+  --shadow-md:0 4px 12px oklch(0.2 0.01 80/0.09);
+  --shadow-lg:0 16px 40px oklch(0.2 0.01 80/0.14);
+  --shadow-xl:0 24px 60px oklch(0.2 0.01 80/0.18);
+  --radius-sm:0.375rem;--radius-md:0.5rem;--radius-lg:0.75rem;--radius-xl:1rem;
+  --radius-full:9999px;
+  --transition:180ms cubic-bezier(0.16,1,0.3,1);
+  --font-display:'Instrument Serif',Georgia,serif;
+  --font-body:'Inter','Helvetica Neue',sans-serif;
+  --space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;
+  --space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;
+  --space-12:3rem;--space-16:4rem;
+  --text-xs:clamp(.75rem,.7rem + .25vw,.875rem);
+  --text-sm:clamp(.875rem,.8rem + .35vw,1rem);
+  --text-base:clamp(1rem,.95rem + .25vw,1.125rem);
+  --text-lg:clamp(1.125rem,1rem + .75vw,1.5rem);
+  --text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);
+}
+[data-theme="dark"]{
+  --color-bg:#171614;--color-surface:#1c1b19;--color-surface-2:#232220;
+  --color-surface-offset:#252422;--color-surface-dynamic:#2d2c2a;
+  --color-divider:#2e2d2b;--color-border:#383735;
+  --color-text:#cdccca;--color-text-muted:#8a8986;--color-text-faint:#5a5957;
+  --color-text-inverse:#1c1b19;
+  --color-primary:#4f98a3;--color-primary-hover:#3d828d;
+  --color-primary-highlight:#1e3335;--color-primary-soft:#1e3335;
+  --d1:#4f98a3;--d1-soft:#1c3537;
+  --d2:#5591c7;--d2-soft:#1a2e44;
+  --d3:#a86fdf;--d3-soft:#2d1f47;
+  --d4:#6daa45;--d4-soft:#1e2e17;
+  --d5:#bb653b;--d5-soft:#3a1f12;
+  --d6:#e8af34;--d6-soft:#3a2d0f;
+  --shadow-sm:0 1px 2px oklch(0 0 0/.25);
+  --shadow-md:0 4px 12px oklch(0 0 0/.35);
+  --shadow-lg:0 16px 40px oklch(0 0 0/.5);
+  --shadow-xl:0 24px 60px oklch(0 0 0/.6);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;scroll-behavior:smooth}
+body{min-height:100dvh;font-family:var(--font-body);font-size:var(--text-base);color:var(--color-text);background:var(--color-bg);overflow-x:hidden}
+img,svg{display:block;max-width:100%}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+a,button,[role="button"]{transition:color var(--transition),background var(--transition),box-shadow var(--transition),opacity var(--transition)}
+:focus-visible{outline:2px solid var(--color-primary);outline-offset:3px;border-radius:var(--radius-sm)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ── LAYOUT ─────────────────────────────────────────── */
+.app{display:flex;flex-direction:column;min-height:100dvh}
+header{position:sticky;top:0;z-index:100;background:var(--color-surface);border-bottom:1px solid var(--color-divider);padding:var(--space-3) var(--space-6)}
+.header-inner{display:flex;align-items:center;justify-content:space-between;max-width:1600px;margin:0 auto;gap:var(--space-4)}
+.logo{display:flex;align-items:center;gap:var(--space-3);text-decoration:none;color:inherit;flex-shrink:0}
+.logo-mark{width:32px;height:32px;flex-shrink:0}
+.logo-text{display:flex;flex-direction:column;line-height:1.1}
+.logo-name{font-family:var(--font-display);font-size:var(--text-lg);font-weight:400;letter-spacing:-.01em}
+.logo-sub{font-size:var(--text-xs);color:var(--color-text-muted);font-weight:400}
+.header-actions{display:flex;align-items:center;gap:var(--space-2)}
+.filter-bar{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;flex:1;justify-content:center}
+.filter-btn{padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:500;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);white-space:nowrap;transition:all var(--transition)}
+.filter-btn:hover{border-color:var(--color-primary);color:var(--color-primary)}
+.filter-btn.active{background:var(--color-primary);color:var(--color-text-inverse);border-color:var(--color-primary)}
+.btn-icon{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:var(--radius-md);border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted)}
+.btn-icon:hover{border-color:var(--color-primary);color:var(--color-primary)}
+
+main{flex:1;padding:var(--space-6);max-width:1600px;margin:0 auto;width:100%}
+
+/* ── MATRIX ─────────────────────────────────────────── */
+.matrix-header{display:grid;grid-template-columns:220px repeat(4,1fr);gap:var(--space-2);margin-bottom:var(--space-2);padding:0 0 0 0;position:sticky;top:57px;z-index:50;background:var(--color-bg);padding-bottom:var(--space-2)}
+.col-label{font-size:var(--text-xs);font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--color-text-faint);text-align:center;padding:var(--space-2) var(--space-3)}
+.col-label.col-num{color:var(--color-primary);font-size:var(--text-xs)}
+.matrix-body{display:flex;flex-direction:column;gap:var(--space-2)}
+.dimension-row{display:grid;grid-template-columns:220px repeat(4,1fr);gap:var(--space-2);align-items:stretch}
+.dim-label-cell{display:flex;flex-direction:column;justify-content:center;padding:var(--space-4) var(--space-4);border-radius:var(--radius-lg);background:var(--color-surface);border:1px solid var(--color-border);gap:var(--space-1);min-height:120px}
+.dim-icon{width:28px;height:28px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;margin-bottom:var(--space-2)}
+.dim-icon svg{width:15px;height:15px}
+.dim-name{font-size:var(--text-sm);font-weight:600;line-height:1.25;color:var(--color-text)}
+.dim-count{font-size:var(--text-xs);color:var(--color-text-faint);margin-top:var(--space-1)}
+
+/* ── PRACTICE CELL ───────────────────────────────────── */
+.practice-cell{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-4);cursor:pointer;display:flex;flex-direction:column;gap:var(--space-2);transition:all var(--transition);min-height:120px;position:relative;overflow:hidden}
+.practice-cell::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--dim-color,var(--color-primary));opacity:0;transition:opacity var(--transition)}
+.practice-cell:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);border-color:oklch(from var(--color-text) l c h/.15)}
+.practice-cell:hover::before{opacity:1}
+.practice-cell.active{border-color:var(--dim-color,var(--color-primary));box-shadow:0 0 0 2px oklch(from var(--dim-color,var(--color-primary)) l c h/.2),var(--shadow-md)}
+.practice-cell.active::before{opacity:1}
+.practice-cell.dimmed{opacity:.4}
+.cell-maturity{display:inline-flex;align-items:center;gap:4px;padding:2px var(--space-2);border-radius:var(--radius-full);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;width:fit-content}
+.m-leading{background:color-mix(in oklch,var(--dim-color,#01696f) 15%,transparent);color:var(--dim-color,var(--color-primary))}
+.m-established{background:var(--color-surface-offset);color:var(--color-text-muted)}
+.m-emerging{background:color-mix(in oklch,var(--color-gold,#d19900) 12%,transparent);color:color-mix(in oklch,var(--color-gold,#d19900) 80%,var(--color-text))}
+.cell-title{font-size:var(--text-sm);font-weight:600;line-height:1.3;color:var(--color-text)}
+.cell-desc{font-size:var(--text-xs);color:var(--color-text-muted);line-height:1.5;flex:1}
+.cell-arrow{position:absolute;bottom:var(--space-3);right:var(--space-3);width:20px;height:20px;border-radius:var(--radius-full);background:var(--color-surface-offset);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity var(--transition)}
+.practice-cell:hover .cell-arrow{opacity:1}
+
+/* ── DRAWER ──────────────────────────────────────────── */
+.drawer-overlay{position:fixed;inset:0;background:oklch(0.15 0.005 80/.4);z-index:200;opacity:0;pointer-events:none;transition:opacity var(--transition)}
+.drawer-overlay.open{opacity:1;pointer-events:all}
+.drawer{position:fixed;top:0;right:0;height:100dvh;width:min(480px,100vw);background:var(--color-surface-2);border-left:1px solid var(--color-border);z-index:201;transform:translateX(100%);transition:transform 360ms cubic-bezier(0.16,1,0.3,1);overflow-y:auto;display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.drawer-header{padding:var(--space-5) var(--space-6);border-bottom:1px solid var(--color-divider);display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4);position:sticky;top:0;background:var(--color-surface-2);z-index:1}
+.drawer-title-group{display:flex;flex-direction:column;gap:var(--space-2)}
+.drawer-dim-badge{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:600;width:fit-content}
+.drawer-title{font-family:var(--font-display);font-size:var(--text-xl);line-height:1.15;font-weight:400}
+.drawer-close{width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-md);border:1px solid var(--color-border);color:var(--color-text-muted)}
+.drawer-close:hover{background:var(--color-surface-offset);color:var(--color-text)}
+.drawer-body{padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-6);flex:1}
+.drawer-section{}
+.drawer-section-label{font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--color-text-faint);margin-bottom:var(--space-3)}
+.drawer-text{font-size:var(--text-sm);color:var(--color-text-muted);line-height:1.65}
+.impact-card{background:var(--color-surface-offset);border-radius:var(--radius-lg);padding:var(--space-4);display:flex;gap:var(--space-3);align-items:flex-start}
+.impact-icon{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.impact-icon svg{width:18px;height:18px}
+.impact-text{font-size:var(--text-sm);font-weight:600;color:var(--color-text);line-height:1.4}
+.impact-sub{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px}
+.tools-grid{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+.tool-chip{padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);background:var(--color-surface-offset);border:1px solid var(--color-border);font-size:var(--text-xs);color:var(--color-text-muted);font-weight:500}
+.adopters-list{display:flex;flex-direction:column;gap:var(--space-2)}
+.adopter-item{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3);background:var(--color-surface-offset);border-radius:var(--radius-md)}
+.adopter-dot{width:8px;height:8px;border-radius:var(--radius-full);flex-shrink:0}
+.adopter-name{font-size:var(--text-sm);font-weight:600;color:var(--color-text)}
+.adopter-note{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:1px}
+.drawer-nav{padding:var(--space-4) var(--space-6);border-top:1px solid var(--color-divider);display:flex;justify-content:space-between;gap:var(--space-2);background:var(--color-surface-2);position:sticky;bottom:0}
+.nav-btn{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-4);border-radius:var(--radius-md);border:1px solid var(--color-border);font-size:var(--text-sm);font-weight:500;color:var(--color-text-muted)}
+.nav-btn:hover:not(:disabled){background:var(--color-surface-offset);color:var(--color-text);border-color:oklch(from var(--color-text) l c h/.2)}
+.nav-btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── LEGEND ──────────────────────────────────────────── */
+.legend{display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-4)}
+.legend-item{display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted)}
+.legend-dot{width:8px;height:8px;border-radius:2px}
+
+/* ── SCROLLBAR ───────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--color-divider);border-radius:var(--radius-full)}
+::-webkit-scrollbar-thumb:hover{background:var(--color-border)}
+
+/* ── RESPONSIVE ──────────────────────────────────────── */
+@media(max-width:900px){
+  .matrix-header,.dimension-row{grid-template-columns:160px repeat(4,1fr)}
+  .dim-name{font-size:11px}
+  .practice-cell{padding:var(--space-3)}
+  .cell-title{font-size:11px}
+  .cell-desc{display:none}
+}
+@media(max-width:650px){
+  .filter-bar{display:none}
+  .matrix-header{grid-template-columns:120px repeat(4,1fr)}
+  .dimension-row{grid-template-columns:120px repeat(4,1fr)}
+  .dim-label-cell{padding:var(--space-2)}
+  .dim-icon{display:none}
+  .dim-count{display:none}
+  main{padding:var(--space-3)}
+  header{padding:var(--space-2) var(--space-3)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a class="logo" href="#" aria-label="OpsLens home">
+      <svg class="logo-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="var(--color-primary)"/>
+        <rect x="7" y="7" width="7" height="7" rx="1.5" fill="white" opacity=".9"/>
+        <rect x="18" y="7" width="7" height="7" rx="1.5" fill="white" opacity=".6"/>
+        <rect x="7" y="18" width="7" height="7" rx="1.5" fill="white" opacity=".6"/>
+        <rect x="18" y="18" width="7" height="7" rx="1.5" fill="white" opacity=".9"/>
+      </svg>
+      <div class="logo-text">
+        <span class="logo-name">OpsLens</span>
+        <span class="logo-sub">Enterprise Operations Intelligence</span>
+      </div>
+    </a>
+
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-btn active" data-filter="all">All Dimensions</button>
+      <button class="filter-btn" data-filter="0">Supply Chain Planning</button>
+      <button class="filter-btn" data-filter="1">Manufacturing</button>
+      <button class="filter-btn" data-filter="2">Sourcing</button>
+      <button class="filter-btn" data-filter="3">Logistics</button>
+      <button class="filter-btn" data-filter="4">Sustainability</button>
+      <button class="filter-btn" data-filter="5">Digital &amp; Data</button>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-icon" data-theme-toggle aria-label="Toggle dark mode">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+  <!-- Legend -->
+  <div class="legend">
+    <span style="font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted);margin-right:var(--space-2)">Maturity:</span>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--color-primary)"></div>Leading</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--color-surface-dynamic)"></div>Established</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d19900"></div>Emerging</div>
+    <span style="font-size:var(--text-xs);color:var(--color-text-faint);margin-left:auto">Click any cell to explore the practice →</span>
+  </div>
+
+  <!-- Column headers -->
+  <div class="matrix-header" id="matrixHeader">
+    <div class="col-label">Dimension</div>
+    <div class="col-label col-num">Practice 1</div>
+    <div class="col-label col-num">Practice 2</div>
+    <div class="col-label col-num">Practice 3</div>
+    <div class="col-label col-num">Practice 4</div>
+  </div>
+
+  <!-- Matrix rows -->
+  <div class="matrix-body" id="matrixBody"></div>
+</main>
+
+</div>
+
+<!-- DRAWER -->
+<div class="drawer-overlay" id="overlay" role="presentation"></div>
+<aside class="drawer" id="drawer" role="complementary" aria-label="Practice detail">
+  <div class="drawer-header">
+    <div class="drawer-title-group">
+      <div class="drawer-dim-badge" id="drawerBadge"></div>
+      <h2 class="drawer-title" id="drawerTitle"></h2>
+    </div>
+    <button class="drawer-close" id="drawerClose" aria-label="Close panel">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-nav">
+    <button class="nav-btn" id="navPrev">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      Previous
+    </button>
+    <button class="nav-btn" id="navNext">
+      Next
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+  </div>
+</aside>
+
+<script>
+// ?? DATA ?????????????????????????????????????????????????
+const DIMENSIONS = [
+  {
+    id:0, key:'d1', name:'Supply Chain Planning', short:'Planning',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM17.5 17.5m-3.5 0a3.5 3.5 0 107 0 3.5 3.5 0 00-7 0"/></svg>`,
+    practices:[
+      {
+        title:'AI Demand Sensing',
+        maturity:'leading',
+        desc:'ML models consuming POS, social, weather and macro signals to sense demand shifts in near real time - replacing statistical extrapolation.',
+        impact:'Forecast error reduced 20-35% vs statistical baseline in pilot markets.',
+        impactSub:'Source: McKinsey FMCG supply chain benchmark 2024',
+        tools:['Azure ML','AWS SageMaker','o9 Solutions','Kinaxis','Palantir Foundry'],
+        adopters:[
+          {name:'Unilever',note:'Integrated demand sensing across 190 markets via connected planning platform'},
+          {name:'Nestle',note:'AI-native demand forecast replacing spreadsheet extrapolation at national level'},
+          {name:'P&G',note:'Supply Chain 3.0 touchless planning driven by real-time demand signals'}
+        ]
+      },
+      {
+        title:'Integrated Business Planning (IBP)',
+        maturity:'established',
+        desc:'Single end-to-end planning cycle connecting finance, sales, supply and operations across a rolling 24-36 month horizon, with weekly execution drumbeats.',
+        impact:'Planning cycle time cut from 4-6 weeks to under 2 weeks; S&OP decision quality measurably improved.',
+        impactSub:'Source: Gartner Supply Chain Top 25, 2024',
+        tools:['SAP IBP','Anaplan','Kinaxis RapidResponse','Blue Yonder'],
+        adopters:[
+          {name:'Procter & Gamble',note:'Global IBP deployment across all business units'},
+          {name:'Hershey',note:'Integrated dynamic planning replacing independent trade/DME optimisation'},
+          {name:'Philip Morris Intl',note:'Supply Chain Synchronization Hub connecting demand and manufacturing planning'}
+        ]
+      },
+      {
+        title:'Demand-Driven MRP (DDMRP)',
+        maturity:'established',
+        desc:'Buffer-based, pull-driven replenishment decoupling supply from forecast error - positioned strategic buffers absorb variability without bullwhip amplification.',
+        impact:'Inventory carrying costs reduced 15-25%; fill rates improved 5-8 pts with lower stock levels.',
+        impactSub:'Source: Demand Driven Institute industry benchmark',
+        tools:['SAP S/4HANA DDMRP','Intuiflow','Replenishment+','DDMX'],
+        adopters:[
+          {name:'Nestle',note:'DDMRP pilots in high-volatility SKU categories across Europe'},
+          {name:'Colgate-Palmolive',note:'Buffer-managed replenishment replacing forecast-push MRP in select markets'},
+          {name:'Abbott',note:'DDMRP deployment reducing stockouts in high-velocity healthcare lines'}
+        ]
+      },
+      {
+        title:'Touchless / Autonomous Planning',
+        maturity:'emerging',
+        desc:'AI-generated replenishment orders executing automatically without human review for stable SKUs - planners focus on exception management only.',
+        impact:'80%+ of routine orders executed without planner touch; planner bandwidth freed for strategic decisions.',
+        impactSub:'Source: P&G Operations report 2023; Gartner 2024',
+        tools:['o9 Solutions','Palantir','LLM-based plan agents','Kinaxis'],
+        adopters:[
+          {name:'P&G',note:'Night-shift autonomous replenishment deployed across North America DCs'},
+          {name:'Unilever',note:'Autonomous order generation pilots in frozen and ambient categories'},
+          {name:'L\'Oreal',note:'Exception-only planning for 60%+ of SKUs in Europe'}
+        ]
+      }
+    ]
+  },
+  {
+    id:1, key:'d2', name:'Manufacturing & Operations', short:'Manufacturing',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 20h20M4 20V10l6-6 6 6v10M10 20v-5h4v5"/><circle cx="12" cy="7" r="1"/></svg>`,
+    practices:[
+      {
+        title:'WEF 4IR Lighthouse Factories',
+        maturity:'leading',
+        desc:'World Economic Forum-certified advanced manufacturing sites demonstrating best-in-class IIoT, AI, digital twin and human-machine collaboration - driving step-change productivity.',
+        impact:'85% reduction in changeover time; planning freeze period cut from 14 to 1 day; 400% labour productivity gain at certified sites.',
+        impactSub:'Source: WEF Global Lighthouse Network 2024',
+        tools:['Siemens MindSphere','PTC ThingWorx','Rockwell FactoryTalk','SAP ME'],
+        adopters:[
+          {name:'Unilever',note:'11 Lighthouse-certified sites; Hindustan Unilever exemplar for emerging markets'},
+          {name:'Nestle',note:'Multiple Lighthouse sites across Europe and Asia Pacific'},
+          {name:'P&G',note:'Lima, Ohio and Singapore sites recognised for AI-driven OEE improvements'}
+        ]
+      },
+      {
+        title:'Manufacturing Digital Twin',
+        maturity:'established',
+        desc:'Virtual replica of production lines or entire factories enabling simulation of scheduling, maintenance scenarios and capacity planning before physical execution.',
+        impact:'Unplanned downtime reduced 20-40%; new product introduction timelines shortened by weeks.',
+        impactSub:'Source: Deloitte Manufacturing Digital Twin Survey 2024',
+        tools:['NVIDIA Omniverse','Siemens Tecnomatix','Dassault 3DExperience','PTC Creo'],
+        adopters:[
+          {name:'Unilever',note:'Digital twin of Dove Bar global network for capacity scenario planning'},
+          {name:'Nestle',note:'Factory twin used during product development to simulate line changeovers'},
+          {name:'Philip Morris Intl',note:'Digital twin of 51-site manufacturing footprint; scenario evaluation from weeks to hours'}
+        ]
+      },
+      {
+        title:'Flexible / Agile Production Lines',
+        maturity:'established',
+        desc:'Multi-purpose assets enabling quick changeovers across a diverse SKU portfolio - replacing single-purpose, capital-intensive lines with high setup costs.',
+        impact:'Changeover time 60-80% lower; capital efficiency improved 30-50% vs dedicated lines.',
+        impactSub:'Source: Hershey Investor Day 2023; McKinsey Operations 2024',
+        tools:['Lean changeover tools','SMED methodology','Collaborative robotics','Modular line design'],
+        adopters:[
+          {name:'Hershey',note:'Advanced technology lines replacing conventional capital-intensive single-purpose assets'},
+          {name:'Colgate-Palmolive',note:'Flex manufacturing enabling regional customisation without capacity sacrifice'},
+          {name:'Henkel',note:'Modular production concept deployed across European detergents network'}
+        ]
+      },
+      {
+        title:'Autonomous Quality Control',
+        maturity:'emerging',
+        desc:'Computer vision and AI replacing manual sampling - 100% inline inspection at production speed, with real-time feedback loops to eliminate defect batches.',
+        impact:'Defect escape rate reduced 70-90%; cost of quality inspection down 40%.',
+        impactSub:'Source: McKinsey Manufacturing 2024; WEF Lighthouse case studies',
+        tools:['Cognex Vision','Keyence','Landing AI','Instrumental','AWS Lookout for Vision'],
+        adopters:[
+          {name:'Nestle',note:'Computer vision QC deployed on confectionery and beverage lines in Asia'},
+          {name:'Mondelez',note:'Inline AI inspection replacing sampling on biscuit production lines'},
+          {name:'AB InBev',note:'100% bottle inspection using machine vision replacing manual sampling'}
+        ]
+      }
+    ]
+  },
+  {
+    id:2, key:'d3', name:'Sourcing & Procurement', short:'Sourcing',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`,
+    practices:[
+      {
+        title:'Responsible Sourcing Platforms',
+        maturity:'leading',
+        desc:'Digital supplier due diligence and traceability platforms extending ESG standards to Tier 2/3 suppliers - tracking deforestation, labour rights and carbon across the supply base.',
+        impact:'100% of strategic suppliers assessed; audit cycle time cut from months to weeks.',
+        impactSub:'Source: PMI STEP programme; Unilever Responsible Sourcing Policy',
+        tools:['EcoVadis','Sedex','IBM Food Trust','sourcemap','PMI STEP'],
+        adopters:[
+          {name:'Philip Morris Intl',note:'STEP platform for supplier human rights and environmental due diligence across 97 markets'},
+          {name:'Unilever',note:'Responsible Sourcing Policy covering 60,000+ supplier assessments'},
+          {name:'Nestle',note:'Cocoa and palm oil traceability using satellite monitoring and supplier apps'}
+        ]
+      },
+      {
+        title:'"China Plus Many" Diversification',
+        maturity:'established',
+        desc:'Deliberate geographic rebalancing of manufacturing and sourcing networks - adding India, Vietnam, Mexico and Morocco as strategic nodes to reduce single-country concentration risk.',
+        impact:'Single-country concentration risk reduced; resilience index improved vs 2019 pre-disruption baseline.',
+        impactSub:'Source: BCG Global Supply Chain Resilience Report 2024',
+        tools:['Network design tools','Should-cost models','Nearshoring playbooks','River Logic'],
+        adopters:[
+          {name:'Apple (cross-industry)',note:'Systematic India/Vietnam manufacturing scale-up; reference model for FMCG'},
+          {name:'Unilever',note:'New manufacturing capacity in India and Southeast Asia for local + export'},
+          {name:'Hershey',note:'Network resilience as explicit strategic pillar - alternate sourcing programmes'}
+        ]
+      },
+      {
+        title:'Should-Cost Modelling',
+        maturity:'established',
+        desc:'Bottoms-up cost decomposition of supplier proposals using material, labour and overhead benchmarks - enabling data-led negotiation and identifying cost reduction opportunities.',
+        impact:'Procurement cost reduced 5-12% on targeted categories through evidence-based negotiation.',
+        impactSub:'Source: Gartner Procurement 2024; Hackett Group benchmarks',
+        tools:['Should-cost software','Cleansheet','aPriori','Spend analytics platforms'],
+        adopters:[
+          {name:'P&G',note:'Should-cost modelling across packaging and raw material categories globally'},
+          {name:'Nestle',note:'Cleansheet costing integrated into supplier negotiation process'},
+          {name:'Reckitt',note:'Value engineering programme using should-cost to identify reformulation savings'}
+        ]
+      },
+      {
+        title:'ESG-Linked Supply Chain Finance',
+        maturity:'emerging',
+        desc:'Dynamic discounting and supply chain finance programmes where supplier financing rates are linked to ESG performance scores - incentivising sustainability at scale across the supply base.',
+        impact:'Supplier ESG score improvement 20-30% within 2 years of programme launch; working capital benefit for both buyer and supplier.',
+        impactSub:'Source: IFC/World Bank SCF report 2024; HSBC programme data',
+        tools:['C2FO','Taulia','Tradeshift','SAP Ariba Finance'],
+        adopters:[
+          {name:'Unilever',note:'Supply chain finance linked to Supplier Sustainability Index scores'},
+          {name:'Nestle',note:'Cocoa supplier preferential financing tied to Rainforest Alliance certification'},
+          {name:'Heineken',note:'ESG-linked reverse factoring programme for barley and packaging suppliers'}
+        ]
+      }
+    ]
+  },
+  {
+    id:3, key:'d4', name:'Logistics & Fulfilment', short:'Logistics',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8zM5.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM18.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg>`,
+    practices:[
+      {
+        title:'Supply Chain Control Tower',
+        maturity:'leading',
+        desc:'Real-time end-to-end visibility layer spanning factory, DC, in-transit and retail - with ML-based exception detection and playbook-driven resolution.',
+        impact:'On-time-in-full (OTIF) improved 5-10 pts; exception resolution time reduced from days to hours.',
+        impactSub:'Source: Gartner Supply Chain Top 25 2024; Blue Yonder case studies',
+        tools:['Blue Yonder','o9 Control Tower','SAP Integrated Business Planning','Elementum'],
+        adopters:[
+          {name:'Unilever',note:'Global control tower with AI-powered alert triage across 190 markets'},
+          {name:'Nestle',note:'SAP IBP + control tower layer managing 40,000+ DC locations'},
+          {name:'P&G',note:'End-to-end visibility enabling touchless night-shift replenishment decisions'}
+        ]
+      },
+      {
+        title:'Omnichannel Last-Mile Architecture',
+        maturity:'established',
+        desc:'Unified inventory pool serving B2C e-commerce, B2B traditional trade and D2C channels from shared network nodes - eliminating channel siloes and dead stock.',
+        impact:'Fulfilment cost per order reduced 15-25%; inventory turns improved through unified pooling.',
+        impactSub:'Source: Capgemini Last-Mile Report 2024; Accenture FMCG Fulfilment',
+        tools:['Manhattan Associates','Blue Yonder WMS','Fluent Commerce OMS','K?rber WMS'],
+        adopters:[
+          {name:'L\'Oreal',note:'Unified D2C, marketplace and retail fulfilment from shared European DC network'},
+          {name:'Unilever',note:'Hefei, China factory-to-consumer model serving D2C and B2B from single node'},
+          {name:'P&G',note:'Omnichannel fulfilment integration across DTC and major retail partners'}
+        ]
+      },
+      {
+        title:'AI Network Optimisation',
+        maturity:'established',
+        desc:'Continuous optimisation of DC locations, transport lanes and inventory positioning using scenario modelling - replacing periodic strategic reviews with always-on network design.',
+        impact:'Logistics cost reduced 8-15%; carbon emissions down 10-20% through route and node optimisation.',
+        impactSub:'Source: River Logic case studies; McKinsey Operations 2024',
+        tools:['River Logic','LLamasoft (Coupa)','AIMMS','Llamasoft Supply Chain Guru'],
+        adopters:[
+          {name:'Philip Morris Intl',note:'River Logic digital twin evaluating network scenarios from weeks to hours'},
+          {name:'Nestle',note:'AI-driven DC rationalisation across European distribution network'},
+          {name:'Diageo',note:'Network optimisation reducing carbon intensity per case delivered by 20%'}
+        ]
+      },
+      {
+        title:'Micro-Fulfilment & Instant Commerce',
+        maturity:'emerging',
+        desc:'Compact automated fulfilment nodes co-located near urban consumption centres enabling 15-30 minute delivery for FMCG categories - particularly personal care and snacks.',
+        impact:'15-minute delivery feasible at FMCG scale; urban basket size 40% higher than standard e-commerce.',
+        impactSub:'Source: Gopuff/Unilever pilot data 2024; Ocado Group 2024',
+        tools:['Autostore','Ocado Smart Platform','Takeoff Technologies','Attabotics'],
+        adopters:[
+          {name:'Unilever',note:'Micro-fulfilment pilots with Gopuff in US urban markets for personal care'},
+          {name:'P&G',note:'Same-day pilot with Instacart and DoorDash Dash Mart for FMCG categories'},
+          {name:'Reckitt',note:'Urban express delivery partnerships in UK and Germany for health/hygiene'}
+        ]
+      }
+    ]
+  },
+  {
+    id:4, key:'d5', name:'Sustainability & Circularity', short:'Sustainability',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22a9 9 0 100-18 9 9 0 000 18z"/><path d="M12 8v4l3 3"/><path d="M7.2 5.4A8.97 8.97 0 004 12c0 2.4.94 4.58 2.47 6.2"/></svg>`,
+    practices:[
+      {
+        title:'Scope 3 Supply Chain Tracking',
+        maturity:'leading',
+        desc:'Primary data collection from Tier 1 and Tier 2 suppliers for Scope 3 emissions - replacing spend-based estimation with activity-level carbon accounting.',
+        impact:'Scope 3 data accuracy improved from ?40% to ?10%; enables credible SBTi pathway reporting.',
+        impactSub:'Source: CDP Supply Chain Report 2024; SBTi corporate guidance',
+        tools:['Watershed','Persefoni','Microsoft Sustainability Manager','SAP Green Ledger'],
+        adopters:[
+          {name:'Nestle',note:'Net Zero Roadmap with supplier-level Scope 3 data collection via supplier platform'},
+          {name:'Unilever',note:'Climate & Nature Fund linked to supplier emissions data quality programme'},
+          {name:'P&G',note:'Ambition 2030 - supplier carbon data integrated into procurement scorecard'}
+        ]
+      },
+      {
+        title:'Circular Packaging Design',
+        maturity:'established',
+        desc:'Packaging designed for recyclability, reuse or composability at end of life - driven by EU ESPR regulation and Extended Producer Responsibility (EPR) compliance.',
+        impact:'Virgin plastic use reduced 30-50% by 2025 targets; EPR levy liability reduced for compliant brands.',
+        impactSub:'Source: EU ESPR Regulation 2024; Ellen MacArthur Foundation data',
+        tools:['Packaging design tools','LCA software','How2Recycle','Sustainalytics packaging'],
+        adopters:[
+          {name:'Unilever',note:'Plastic packaging commitment: 100% reusable/recyclable/compostable by 2025'},
+          {name:'Nestle',note:'Institute of Packaging Sciences developing next-gen paper and bio-based formats'},
+          {name:'Hershey',note:'Packaging sustainability as explicit ESG pillar - lightweight and recyclable upgrades'}
+        ]
+      },
+      {
+        title:'Green Logistics Programme',
+        maturity:'established',
+        desc:'Systematic decarbonisation of transport through electric vehicles, HVO biofuel, intermodal shift and load factor optimisation - enabled by CO? tracking per shipment.',
+        impact:'Logistics Scope 3 emissions reduced 15-30% per tonne-km vs 2019 baseline.',
+        impactSub:'Source: Sustainable Shipping Initiative 2024; EDF+Business Transport',
+        tools:['EV fleets','HVO biofuel','Rail/sea modal shift','SmartWay','EcoTransit'],
+        adopters:[
+          {name:'Unilever',note:'Clean Future logistics using electric delivery vehicles in urban last mile'},
+          {name:'Nestle',note:'Smart Freight Centre membership; HVO and EV pilot across Swiss/German lanes'},
+          {name:'Philip Morris Intl',note:'Value Plan 2030+ Scope 1 & 2 carbon neutrality by end-2025 targets'}
+        ]
+      },
+      {
+        title:'Reverse Supply Chain & EPR',
+        maturity:'emerging',
+        desc:'Infrastructure for product/packaging take-back, device servicing (for tech-led FMCG) and EPR compliance - transforming end-of-life into a managed operational process.',
+        impact:'Device return rates 20-40% in mature D2C channels; EPR compliance cost reduced through design-for-recycling.',
+        impactSub:'Source: PMI Annual Report 2024; Terracycle EPR data',
+        tools:['Reverse logistics platforms','EPR compliance software','Loop (TerraCycle)','Optoro'],
+        adopters:[
+          {name:'Philip Morris Intl',note:'Reverse supply chain for IQOS device servicing across 97 markets'},
+          {name:'Nespresso',note:'Capsule recycling programme with 100,000+ collection points globally'},
+          {name:'Procter & Gamble',note:'Tide Eco-Box and packaging take-back pilots in US/Europe'}
+        ]
+      }
+    ]
+  },
+  {
+    id:5, key:'d6', name:'Digital & Data Capabilities', short:'Digital & Data',
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h10M7 12h6"/></svg>`,
+    practices:[
+      {
+        title:'Unified Data & Analytics Platform',
+        maturity:'leading',
+        desc:'Single cloud-based data platform consolidating POS, factory, supplier, logistics and finance data - enabling cross-functional analytics and AI model training at scale.',
+        impact:'Data-to-insight cycle time reduced from weeks to hours; analytics cost per insight reduced 60%.',
+        impactSub:'Source: Nestle Digital Transformation Report 2024; Gartner Data & Analytics',
+        tools:['Snowflake','Databricks','Azure Synapse','Google BigQuery','SAP Datasphere'],
+        adopters:[
+          {name:'Nestle',note:'SAP AI overhaul across 112 countries building unified data foundation'},
+          {name:'Unilever',note:'UniOps data lake consolidating 300+ legacy data systems'},
+          {name:'L\'Oreal',note:'Beauty Tech data platform integrating consumer, retail and supply data'}
+        ]
+      },
+      {
+        title:'Generative AI in Operations',
+        maturity:'established',
+        desc:'GenAI applied to supply chain exception resolution, procurement contract analysis, maintenance work order generation and customer service - automating knowledge-intensive tasks.',
+        impact:'Knowledge-work productivity increased 20-40% in pilot functions; exception resolution 3x faster.',
+        impactSub:'Source: McKinsey GenAI in Operations 2024; BCG AI Radar',
+        tools:['Microsoft Copilot','Google Vertex AI','Cohere','OpenAI API','Custom LLM agents'],
+        adopters:[
+          {name:'Unilever',note:'GenAI-driven distribution centre at 3PL warehouse; 40% productivity uplift'},
+          {name:'Nestle',note:'NesGPT internal AI assistant deployed to 30,000+ employees for operations tasks'},
+          {name:'Hershey',note:'AI incorporated as core enabler in integrated dynamic planning transformation'}
+        ]
+      },
+      {
+        title:'ERP Harmonisation & Process Mining',
+        maturity:'established',
+        desc:'Global SAP S/4HANA or equivalent harmonisation eliminating legacy system fragmentation - combined with process mining to identify and close execution gaps before go-live.',
+        impact:'Process variance reduced 40-60%; compliance and auditability improved; real-time financial close.',
+        impactSub:'Source: SAP FMCG transformation case studies 2024; Celonis benchmark',
+        tools:['SAP S/4HANA','Celonis','UiPath Process Mining','ServiceNow','Signavio'],
+        adopters:[
+          {name:'Nestle',note:'Multi-year SAP S/4HANA rollout across 112 countries replacing 300+ legacy systems'},
+          {name:'Hershey',note:'Enhanced ERP system as strategic pillar for supply chain and commercial integration'},
+          {name:'Reckitt',note:'SAP harmonisation post-portfolio simplification to drive process standardisation'}
+        ]
+      },
+      {
+        title:'Digital Worker Enablement',
+        maturity:'emerging',
+        desc:'AI-augmented frontline tools - smart glasses, mobile apps, digital work instructions and AI scheduling assistants - putting real-time data in the hands of factory and field workers.',
+        impact:'Training time for new line workers reduced 50%; first-time-right rate improved 15-25%.',
+        impactSub:'Source: WEF Future of Jobs 2025; Tulip Operations report',
+        tools:['Tulip Interfaces','Augmentir','RealWear','Poka','Sight Machine'],
+        adopters:[
+          {name:'P&G',note:'HBS-BCG partnership for AI workforce upskilling and digital augmentation programme'},
+          {name:'Hindustan Unilever',note:'AI-powered workforce allocation tools cutting planning time 80% at Lighthouse site'},
+          {name:'Nestle',note:'Digital work instructions and AR guidance deployed across manufacturing network'}
+        ]
+      }
+    ]
+  }
+];
+
+// Flatten all practices for drawer navigation
+const ALL_PRACTICES = [];
+DIMENSIONS.forEach((dim,di)=>{
+  dim.practices.forEach((p,pi)=>{
+    ALL_PRACTICES.push({...p,dimId:di,dimName:dim.name,dimKey:dim.key,practiceIndex:pi});
+  });
+});
+
+// ?? COLOUR HELPERS ??????????????????????????????????????
+function getDimColor(key){ return getComputedStyle(document.documentElement).getPropertyValue('--'+key).trim(); }
+function getDimSoft(key){ return getComputedStyle(document.documentElement).getPropertyValue('--'+key+'-soft').trim(); }
+function maturityClass(m){ return m==='leading'?'m-leading':m==='established'?'m-established':'m-emerging'; }
+function maturityLabel(m){ return m==='leading'?'* Leading':m==='established'?'Established':'? Emerging'; }
+
+// ?? BUILD MATRIX ????????????????????????????????????????
+function buildMatrix(){
+  const body = document.getElementById('matrixBody');
+  body.innerHTML='';
+  DIMENSIONS.forEach((dim,di)=>{
+    const row = document.createElement('div');
+    row.className='dimension-row';
+    row.dataset.dim=di;
+
+    // Dimension label cell
+    const lc = document.createElement('div');
+    lc.className='dim-label-cell';
+    lc.style.setProperty('--dim-color','var(--'+dim.key+')');
+    lc.style.borderTop='2px solid var(--'+dim.key+')';
+    lc.innerHTML=`
+      <div class="dim-icon" style="background:var(--${dim.key}-soft);color:var(--${dim.key})">
+        ${dim.icon}
+      </div>
+      <div class="dim-name">${dim.name}</div>
+      <div class="dim-count">${dim.practices.length} practices</div>`;
+    row.appendChild(lc);
+
+    // Practice cells
+    dim.practices.forEach((p,pi)=>{
+      const globalIdx = ALL_PRACTICES.findIndex(x=>x.dimId===di&&x.practiceIndex===pi);
+      const cell = document.createElement('div');
+      cell.className='practice-cell';
+      cell.style.setProperty('--dim-color','var(--'+dim.key+')');
+      cell.dataset.global=globalIdx;
+      cell.setAttribute('role','button');
+      cell.setAttribute('tabindex','0');
+      cell.setAttribute('aria-label',`${p.title} - click for details`);
+      cell.innerHTML=`
+        <span class="cell-maturity ${maturityClass(p.maturity)}">${maturityLabel(p.maturity)}</span>
+        <div class="cell-title">${p.title}</div>
+        <div class="cell-desc">${p.desc.slice(0,90)}?</div>
+        <div class="cell-arrow">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>`;
+      cell.addEventListener('click',()=>openDrawer(globalIdx));
+      cell.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openDrawer(globalIdx);}});
+      row.appendChild(cell);
+    });
+
+    body.appendChild(row);
+  });
+}
+
+// ?? DRAWER ??????????????????????????????????????????????
+let currentGlobal = -1;
+const overlay = document.getElementById('overlay');
+const drawer = document.getElementById('drawer');
+const drawerTitle = document.getElementById('drawerTitle');
+const drawerBadge = document.getElementById('drawerBadge');
+const drawerBody = document.getElementById('drawerBody');
+const navPrev = document.getElementById('navPrev');
+const navNext = document.getElementById('navNext');
+
+function openDrawer(idx){
+  currentGlobal=idx;
+  renderDrawer(idx);
+  drawer.classList.add('open');
+  overlay.classList.add('open');
+  document.body.style.overflow='hidden';
+  // Highlight cell
+  document.querySelectorAll('.practice-cell').forEach(c=>{
+    c.classList.toggle('active',+c.dataset.global===idx);
+    c.classList.toggle('dimmed',+c.dataset.global!==idx);
+  });
+}
+
+function closeDrawer(){
+  drawer.classList.remove('open');
+  overlay.classList.remove('open');
+  document.body.style.overflow='';
+  document.querySelectorAll('.practice-cell').forEach(c=>{
+    c.classList.remove('active','dimmed');
+  });
+  currentGlobal=-1;
+}
+
+function renderDrawer(idx){
+  const p = ALL_PRACTICES[idx];
+  const dimKey = p.dimKey;
+  drawerBadge.textContent = p.dimName;
+  drawerBadge.style.background='var(--'+dimKey+'-soft)';
+  drawerBadge.style.color='var(--'+dimKey+')';
+  drawerTitle.textContent = p.title;
+
+  const matBadge = `<span class="cell-maturity ${maturityClass(p.maturity)}" style="--dim-color:var(--${dimKey})">${maturityLabel(p.maturity)}</span>`;
+
+  const adoptorsHtml = p.adopters.map(a=>`
+    <div class="adopter-item">
+      <div class="adopter-dot" style="background:var(--${dimKey})"></div>
+      <div>
+        <div class="adopter-name">${a.name}</div>
+        <div class="adopter-note">${a.note}</div>
+      </div>
+    </div>`).join('');
+
+  const toolsHtml = p.tools.map(t=>`<span class="tool-chip">${t}</span>`).join('');
+
+  drawerBody.innerHTML=`
+    <div style="display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap">
+      ${matBadge}
+      <span style="font-size:var(--text-xs);color:var(--color-text-faint)">${p.dimName}</span>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-label">What it is</div>
+      <p class="drawer-text">${p.desc}</p>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-label">Measured impact</div>
+      <div class="impact-card">
+        <div class="impact-icon" style="background:var(--${dimKey}-soft);color:var(--${dimKey})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <div>
+          <div class="impact-text">${p.impact}</div>
+          <div class="impact-sub">${p.impactSub}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-label">Tools & platforms</div>
+      <div class="tools-grid">${toolsHtml}</div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-label">Who is adopting it</div>
+      <div class="adopters-list">${adoptorsHtml}</div>
+    </div>`;
+
+  navPrev.disabled = idx===0;
+  navNext.disabled = idx===ALL_PRACTICES.length-1;
+}
+
+document.getElementById('drawerClose').addEventListener('click',closeDrawer);
+overlay.addEventListener('click',closeDrawer);
+navPrev.addEventListener('click',()=>{ if(currentGlobal>0) openDrawer(currentGlobal-1); });
+navNext.addEventListener('click',()=>{ if(currentGlobal<ALL_PRACTICES.length-1) openDrawer(currentGlobal+1); });
+document.addEventListener('keydown',e=>{
+  if(!drawer.classList.contains('open')) return;
+  if(e.key==='Escape') closeDrawer();
+  if(e.key==='ArrowRight'&&currentGlobal<ALL_PRACTICES.length-1) openDrawer(currentGlobal+1);
+  if(e.key==='ArrowLeft'&&currentGlobal>0) openDrawer(currentGlobal-1);
+});
+
+// ?? FILTER ??????????????????????????????????????????????
+document.getElementById('filterBar').addEventListener('click',e=>{
+  const btn=e.target.closest('.filter-btn');
+  if(!btn) return;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const f=btn.dataset.filter;
+  document.querySelectorAll('.dimension-row').forEach(r=>{
+    if(f==='all') r.style.display='';
+    else r.style.display=r.dataset.dim===f?'':'none';
+  });
+  if(drawer.classList.contains('open')) closeDrawer();
+});
+
+// ?? DARK MODE ????????????????????????????????????????????
+(function(){
+  const t=document.querySelector('[data-theme-toggle]'),r=document.documentElement;
+  let d=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+  r.setAttribute('data-theme',d);
+  const sunSvg=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`;
+  const moonSvg=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+  const setIcon=()=>{ t.innerHTML=d==='dark'?sunSvg:moonSvg; t.setAttribute('aria-label','Switch to '+(d==='dark'?'light':'dark')+' mode'); };
+  setIcon();
+  t.addEventListener('click',()=>{ d=d==='dark'?'light':'dark'; r.setAttribute('data-theme',d); setIcon(); });
+})();
+
+// ?? INIT ?????????????????????????????????????????????????
+buildMatrix();
+</script>
+</body>
+</html>
