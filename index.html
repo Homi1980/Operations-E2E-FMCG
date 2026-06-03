@@ -155,6 +155,17 @@ main{flex:1;padding:var(--space-6);max-width:1600px;margin:0 auto;width:100%}
 .legend-item{display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-xs);color:var(--color-text-muted)}
 .legend-dot{width:8px;height:8px;border-radius:2px}
 
+.cell-topline{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-2)}
+.value-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;padding:2px 8px;border-radius:var(--radius-full);font-size:11px;font-weight:800;letter-spacing:.04em;border:1px solid transparent}
+.v-high{background:color-mix(in oklch,var(--color-success) 14%,transparent);color:var(--color-success);border-color:color-mix(in oklch,var(--color-success) 26%,transparent)}
+.v-medium{background:color-mix(in oklch,var(--color-blue) 14%,transparent);color:var(--color-blue);border-color:color-mix(in oklch,var(--color-blue) 26%,transparent)}
+.v-low{background:color-mix(in oklch,var(--color-gold) 18%,transparent);color:#9a6a00;border-color:color-mix(in oklch,var(--color-gold) 32%,transparent)}
+.value-card{background:var(--color-surface-offset);border-radius:var(--radius-lg);padding:var(--space-4);display:grid;gap:var(--space-3)}
+.value-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding-bottom:var(--space-2);border-bottom:1px solid var(--color-divider)}
+.value-row:last-child{border-bottom:none;padding-bottom:0}
+.value-dim{font-size:var(--text-xs);color:var(--color-text-muted)}
+.value-copy{font-size:var(--text-sm);color:var(--color-text);line-height:1.5}
+
 /* ── SCROLLBAR ───────────────────────────────────────── */
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -228,6 +239,9 @@ main{flex:1;padding:var(--space-6);max-width:1600px;margin:0 auto;width:100%}
     <div class="legend-item"><div class="legend-dot" style="background:var(--color-primary)"></div>Leading</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--color-surface-dynamic)"></div>Established</div>
     <div class="legend-item"><div class="legend-dot" style="background:#d19900"></div>Emerging</div>
+    <div class="legend-item"><span style="font-weight:700;color:var(--color-success)">$$$</span>High enterprise value</div>
+    <div class="legend-item"><span style="font-weight:700;color:var(--color-blue)">$$</span>Medium value</div>
+    <div class="legend-item"><span style="font-weight:700;color:#b07a00">$</span>Emerging / option value</div>
     <span style="font-size:var(--text-xs);color:var(--color-text-faint);margin-left:auto">Click any cell to explore the practice →</span>
   </div>
 
@@ -624,6 +638,34 @@ const DIMENSIONS = [
   }
 ];
 
+const VALUE_MAP = {
+  'AI Demand Sensing': {score:'$$$', cls:'v-high', rationale:'Broad enterprise value through growth capture, service improvement, inventory productivity and faster response to volatility.'},
+  'Integrated Business Planning (IBP)': {score:'$$$', cls:'v-high', rationale:'High cross-functional value because it aligns commercial, supply and finance decisions and improves capital allocation.'},
+  'Demand-Driven MRP (DDMRP)': {score:'$$', cls:'v-medium', rationale:'Meaningful inventory and service benefits, though usually narrower than full planning transformation.'},
+  'Touchless / Autonomous Planning': {score:'$$$', cls:'v-high', rationale:'Large upside from planner productivity, decision speed, resilience and scalable autonomous execution.'},
+  'WEF 4IR Lighthouse Factories': {score:'$$$', cls:'v-high', rationale:'Top-tier enterprise value with simultaneous benefits in productivity, quality, service, safety and sustainability.'},
+  'Manufacturing Digital Twin': {score:'$$', cls:'v-medium', rationale:'Strong operations and capex value, but impact depends on scale of deployment and quality of usage.'},
+  'Flexible / Agile Production Lines': {score:'$$$', cls:'v-high', rationale:'Material value from innovation speed, SKU agility, asset productivity and working-capital efficiency.'},
+  'Autonomous Quality Control': {score:'$$', cls:'v-medium', rationale:'Clear quality, waste and labor benefits, but often concentrated in selected lines and sites.'},
+  'Responsible Sourcing Platforms': {score:'$$', cls:'v-medium', rationale:'Strategic value in compliance, resilience and brand protection, with less immediate cash impact than core operating levers.'},
+  '"China Plus Many" Diversification': {score:'$$$', cls:'v-high', rationale:'Large resilience and continuity value by reducing concentration risk and protecting revenue under disruption.'},
+  'Should-Cost Modelling': {score:'$$', cls:'v-medium', rationale:'Consistent procurement savings lever, but narrower than end-to-end redesign or platform transformation.'},
+  'ESG-Linked Supply Chain Finance': {score:'$', cls:'v-low', rationale:'Promising ecosystem and financing benefits, though direct enterprise payoff is still emerging in many FMCG settings.'},
+  'Supply Chain Control Tower': {score:'$$$', cls:'v-high', rationale:'Enterprise-wide value through visibility, faster exception response, OTIF improvement and resilience management.'},
+  'Omnichannel Last-Mile Architecture': {score:'$$$', cls:'v-high', rationale:'High value where channels are fragmented because it improves growth, service and network productivity together.'},
+  'AI Network Optimisation': {score:'$$$', cls:'v-high', rationale:'Creates structural cost, service and carbon benefits by redesigning the network rather than just tuning operations.'},
+  'Micro-Fulfilment & Instant Commerce': {score:'$', cls:'v-low', rationale:'Useful option value in selected urban categories, but economics remain selective rather than universal.'},
+  'Scope 3 Supply Chain Tracking': {score:'$$', cls:'v-medium', rationale:'Important for investor confidence, compliance and supplier engagement, with growing strategic rather than immediate P&L value.'},
+  'Circular Packaging Design': {score:'$$', cls:'v-medium', rationale:'Supports compliance, brand equity and packaging economics, but payback varies by material system and geography.'},
+  'Green Logistics Programme': {score:'$$', cls:'v-medium', rationale:'Moderate near-term cost and carbon value with stronger long-term strategic upside.'},
+  'Reverse Supply Chain & EPR': {score:'$', cls:'v-low', rationale:'Important in some models and markets, but still an emerging broad-based enterprise value lever in FMCG.'},
+  'Unified Data & Analytics Platform': {score:'$$$', cls:'v-high', rationale:'Foundational value enabler that improves decision quality, AI scalability, speed and transparency across the enterprise.'},
+  'Generative AI in Operations': {score:'$$', cls:'v-medium', rationale:'Potential is high, but scaled value remains uneven across use cases and organizational readiness levels.'},
+  'ERP Harmonisation & Process Mining': {score:'$$$', cls:'v-high', rationale:'Structural value from standardization, control, data integrity and transformation scalability across regions and functions.'},
+  'Digital Worker Enablement': {score:'$$', cls:'v-medium', rationale:'Meaningful productivity and capability gains, with value increasing as frontline adoption deepens.'}
+};
+function getValueMeta(title){ return VALUE_MAP[title] || {score:'$$', cls:'v-medium', rationale:'Balanced enterprise value across growth, cost, resilience and sustainability.'}; }
+
 // Flatten all practices for drawer navigation
 const ALL_PRACTICES = [];
 DIMENSIONS.forEach((dim,di)=>{
@@ -670,8 +712,9 @@ function buildMatrix(){
       cell.setAttribute('role','button');
       cell.setAttribute('tabindex','0');
       cell.setAttribute('aria-label',`${p.title} - click for details`);
+      const vm = getValueMeta(p.title);
       cell.innerHTML=`
-        <span class="cell-maturity ${maturityClass(p.maturity)}">${maturityLabel(p.maturity)}</span>
+        <div class="cell-topline"><span class="cell-maturity ${maturityClass(p.maturity)}">${maturityLabel(p.maturity)}</span><span class="value-badge ${vm.cls}" title="Enterprise value">${vm.score}</span></div>
         <div class="cell-title">${p.title}</div>
         <div class="cell-desc">${p.desc.slice(0,90)}?</div>
         <div class="cell-arrow">
@@ -722,12 +765,14 @@ function closeDrawer(){
 function renderDrawer(idx){
   const p = ALL_PRACTICES[idx];
   const dimKey = p.dimKey;
+  const vm = getValueMeta(p.title);
   drawerBadge.textContent = p.dimName;
   drawerBadge.style.background='var(--'+dimKey+'-soft)';
   drawerBadge.style.color='var(--'+dimKey+')';
   drawerTitle.textContent = p.title;
 
   const matBadge = `<span class="cell-maturity ${maturityClass(p.maturity)}" style="--dim-color:var(--${dimKey})">${maturityLabel(p.maturity)}</span>`;
+  const valBadge = `<span class="value-badge ${vm.cls}">${vm.score}</span>`;
 
   const adoptorsHtml = p.adopters.map(a=>`
     <div class="adopter-item">
@@ -743,12 +788,22 @@ function renderDrawer(idx){
   drawerBody.innerHTML=`
     <div style="display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap">
       ${matBadge}
+      ${valBadge}
       <span style="font-size:var(--text-xs);color:var(--color-text-faint)">${p.dimName}</span>
     </div>
 
     <div class="drawer-section">
       <div class="drawer-section-label">What it is</div>
       <p class="drawer-text">${p.desc}</p>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-label">Enterprise value view</div>
+      <div class="value-card">
+        <div class="value-row"><div><div class="value-dim">Value score</div><div class="value-copy">Broader enterprise value contribution</div></div><div>${valBadge}</div></div>
+        <div class="value-row"><div><div class="value-dim">Value logic</div><div class="value-copy">${vm.rationale}</div></div></div>
+        <div class="value-row"><div><div class="value-dim">Value dimensions</div><div class="value-copy">Growth, margin, working capital, resilience, innovation speed, compliance, talent productivity, and sustainability.</div></div></div>
+      </div>
     </div>
 
     <div class="drawer-section">
